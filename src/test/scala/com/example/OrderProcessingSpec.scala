@@ -11,7 +11,7 @@ import scala.concurrent.duration._
 import akka.http.scaladsl.model.MediaTypes._
 import akka.stream.ActorMaterializer
 import akka.testkit.TestKit
-import com.example.OrderActor.{Order, Price, Product}
+import com.example.OrderActor.{CreateOrder, Order, Price, Product}
 import com.google.common.net.MediaType.JSON_UTF_8
 import com.typesafe.config.ConfigFactory
 
@@ -44,11 +44,13 @@ class OrderProcessingSpec extends TestKit(ActorSystem("CartActorSpec", ConfigFac
       Message(body = ByteString(json), contentType = Some(JSON_UTF_8))
     ))
       .via(messageToOrderFlow())
+      .via(orderToCreateOrderCommand())
       .runWith(Sink.seq)
 
     val result = Await.result(future, 1 seconds)
 
     result should have size(1)
-    result.head should equal(Order("1", List(Product("2", "some", Price("EUR", BigDecimal(13.50)))), Price("EUR", BigDecimal(13.50))))
+    result.head.order should equal(Order("1", List(Product("2", "some", Price("EUR", BigDecimal(13.50)))), Price("EUR", BigDecimal(13.50))))
+    result.head.id should not be null
   }
 }
