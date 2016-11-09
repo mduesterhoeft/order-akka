@@ -1,18 +1,20 @@
 package com.example
 
+import java.util.UUID
+
 import akka.NotUsed
 import akka.actor.Actor.Receive
-import akka.actor.{Actor, ActorLogging, Props}
+import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import akka.http.scaladsl.model.HttpCharsets
 import akka.persistence.{PersistentActor, SnapshotOffer}
-import akka.stream.scaladsl.Flow
+import akka.stream.scaladsl.{Flow, Sink}
 import akka.util.ByteString
 import com.example.OrderActor.{Order, Product}
 import io.scalac.amqp.{Delivery, Message}
 import spray.json.{DefaultJsonProtocol, JsString, JsValue, JsonParser, RootJsonFormat}
 
-class OrderActor extends PersistentActor with ActorLogging{
+class OrderActor extends PersistentActor with ActorLogging {
   import OrderActor._
 
   var state: Option[Order] = None
@@ -23,7 +25,9 @@ class OrderActor extends PersistentActor with ActorLogging{
   }
 
   override def receiveCommand: Receive = {
-    case CreateOrder(_, order) => persist(OrderCreated(order))(updateState)
+    case CreateOrder(_, order) =>
+      log.info(s"received CreateOrder command $order")
+      persist(OrderCreated(order))(updateState)
     case SetOrderStatus(_, orderStatus, comment) => persist(OrderStatusSet(orderStatus, comment))(updateState)
     case GetOrder(_) => sender() ! state
   }
@@ -87,6 +91,14 @@ object OrderActor {
 
     def messageToOrderFlow(): Flow[Message, Order, NotUsed] = {
       Flow.fromFunction(message => JsonParser(ByteString(message.body.toArray).decodeString("UTF-8")).convertTo[Order])
+    }
+
+    def orderToCreateOrderCommand(): Flow[Order, CreateOrder, NotUsed] = {
+      Flow.fromFunction(o => CreateOrder(UUID.randomUUID().toString, o))
+    }
+
+    def publishToOrderActor(orderActor: ActorRef): Sink[CreateOrder, NotUsed] = {
+      Sink.actorRef[CreateOrder](orderActor, "done")
     }
   }
 }
