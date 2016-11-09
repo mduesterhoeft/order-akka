@@ -1,0 +1,10 @@
+machine:
+  java:
+    version: oraclejdk8
+
+test:
+  override:
+    - sbt coverage test:test
+  post:
+    - sbt coverageReport
+    - sbt coveralls
