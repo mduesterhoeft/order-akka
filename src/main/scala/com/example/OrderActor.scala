@@ -18,7 +18,7 @@ class OrderActor extends PersistentActor with ActorLogging{
   var state: Option[Order] = None
 
   override def receiveRecover: Receive = {
-    case event: OrderEvent => println(event); updateState(event)
+    case event: OrderEvent => updateState(event)
     case SnapshotOffer(_, snapshot: Option[Order]) => state = snapshot
   }
 
@@ -71,7 +71,7 @@ object OrderActor {
         case Cancelled => JsString("Cancelled")
       }
 
-      def read(value: JsValue) = value.toString() match {
+      def read(value: JsValue) = value.convertTo[String] match {
         case "Open" => Open
         case "Complete" => Complete
         case "Cancelled" => Cancelled
@@ -79,7 +79,7 @@ object OrderActor {
     }
     implicit val priceFormat = jsonFormat2(Price)
     implicit val productFormat = jsonFormat3(Product)
-    implicit val orderFormat = jsonFormat4(Order).
+    implicit val orderFormat = jsonFormat4(Order)
   }
 
   trait OrderFlow  {

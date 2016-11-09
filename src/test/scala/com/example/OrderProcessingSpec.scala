@@ -37,7 +37,8 @@ class OrderProcessingSpec extends TestKit(ActorSystem("CartActorSpec", ConfigFac
         |"total": {
         |   "amount": 13.50,
         |   "currency": "EUR"
-        | }
+        |},
+        |"orderStatus":"Open"
         |}""".stripMargin
     val future = Source(scala.collection.immutable.Seq(
       Message(body = ByteString(json), contentType = Some(JSON_UTF_8))
@@ -48,6 +49,6 @@ class OrderProcessingSpec extends TestKit(ActorSystem("CartActorSpec", ConfigFac
     val result = Await.result(future, 1 seconds)
 
     result should have size(1)
-    result.tail should equal(Order("1", List(Product("2", "some", Price("EUR", BigDecimal(13.50)))), Price("EUR", BigDecimal(13.50))))
+    result.head should equal(Order("1", List(Product("2", "some", Price("EUR", BigDecimal(13.50)))), Price("EUR", BigDecimal(13.50))))
   }
 }
