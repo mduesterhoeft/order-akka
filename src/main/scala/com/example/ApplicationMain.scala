@@ -1,17 +1,12 @@
 package com.example
 
-import java.util.UUID
-
-import akka.actor.{ActorLogging, ActorSystem, Props}
-import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
+import akka.actor.{ActorSystem, Props}
 import akka.persistence.Persistence
 import akka.persistence.journal.leveldb.{SharedLeveldbJournal, SharedLeveldbStore}
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{Sink, Source}
-import io.scalac.amqp.{Connection, ConnectionSettings}
-import spray.json._
-import DefaultJsonProtocol._
-import com.example.OrderActor.{CreateOrder, Order, OrderFlow}
+import com.example.OrderActor.{CreateOrder, OrderFlow}
+import io.scalac.amqp.Connection
 
 object  ApplicationMain extends App with OrderFlow {
   implicit val system = ActorSystem("MyActorSystem")
@@ -28,10 +23,8 @@ object  ApplicationMain extends App with OrderFlow {
   println("up...")
   Source.fromPublisher(queue)
     .log("order.queue")
-    .map(_.message)
-    .via(messageToOrderFlow())
-    .via(orderToCreateOrderCommand())
-    .to(publishToOrderActor(orderActor)).run
+    .via(deliveryToCreateOrderFlow())
+    .to(Sink.actorRef[CreateOrder](orderActor, "done"))
 
   system.awaitTermination()
 }

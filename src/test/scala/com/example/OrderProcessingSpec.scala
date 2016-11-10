@@ -1,21 +1,19 @@
 package com.example
 
 import akka.actor.ActorSystem
-import akka.http.scaladsl.model.MediaType
-import akka.stream.scaladsl.{Sink, Source}
-import akka.util.ByteString
-import io.scalac.amqp.{Message, Persistent}
-import org.scalatest.{FlatSpec, FlatSpecLike, Matchers}
-
-import scala.concurrent.duration._
-import akka.http.scaladsl.model.MediaTypes._
 import akka.stream.ActorMaterializer
+import akka.stream.scaladsl.{Sink, Source}
 import akka.testkit.TestKit
-import com.example.OrderActor.{CreateOrder, Order, Price, Product}
+import akka.util.ByteString
+import com.example.OrderActor.{Order, Price, Product}
 import com.google.common.net.MediaType.JSON_UTF_8
 import com.typesafe.config.ConfigFactory
+import io.scalac.amqp.{Delivery, DeliveryTag, Message}
+import org.scalatest.{FlatSpecLike, Matchers}
 
+import scala.collection.immutable._
 import scala.concurrent.Await
+import scala.concurrent.duration._
 class OrderProcessingSpec extends TestKit(ActorSystem("CartActorSpec", ConfigFactory.load().getConfig("localTest")))
   with FlatSpecLike with Matchers with OrderActor.OrderFlow {
 
@@ -40,11 +38,8 @@ class OrderProcessingSpec extends TestKit(ActorSystem("CartActorSpec", ConfigFac
         |},
         |"orderStatus":"Open"
         |}""".stripMargin
-    val future = Source(scala.collection.immutable.Seq(
-      Message(body = ByteString(json), contentType = Some(JSON_UTF_8))
-    ))
-      .via(messageToOrderFlow())
-      .via(orderToCreateOrderCommand())
+    val future = Source(Seq(Delivery(Message(body = ByteString(json), contentType = Some(JSON_UTF_8)), DeliveryTag(1), "test", "#", true)))
+      .via(deliveryToCreateOrderFlow())
       .runWith(Sink.seq)
 
     val result = Await.result(future, 1 seconds)

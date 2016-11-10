@@ -8,7 +8,7 @@ import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import akka.http.scaladsl.model.HttpCharsets
 import akka.persistence.{PersistentActor, SnapshotOffer}
-import akka.stream.scaladsl.{Flow, Sink}
+import akka.stream.scaladsl.{Flow, GraphDSL, Sink}
 import akka.util.ByteString
 import com.example.OrderActor.{Order, Product}
 import io.scalac.amqp.{Delivery, Message}
@@ -89,16 +89,11 @@ object OrderActor {
   trait OrderFlow  {
     import OrderProtocols._
 
-    def messageToOrderFlow(): Flow[Message, Order, NotUsed] = {
-      Flow.fromFunction(message => JsonParser(ByteString(message.body.toArray).decodeString("UTF-8")).convertTo[Order])
-    }
-
-    def orderToCreateOrderCommand(): Flow[Order, CreateOrder, NotUsed] = {
-      Flow.fromFunction(o => CreateOrder(UUID.randomUUID().toString, o))
-    }
-
-    def publishToOrderActor(orderActor: ActorRef): Sink[CreateOrder, NotUsed] = {
-      Sink.actorRef[CreateOrder](orderActor, "done")
+    def deliveryToCreateOrderFlow(): Flow[Delivery, CreateOrder, NotUsed] = {
+      Flow[Delivery]
+        .map(delivery => delivery.message)
+        .map(message => JsonParser(ByteString(message.body.toArray).decodeString("UTF-8")).convertTo[Order])
+        .map(o => CreateOrder(UUID.randomUUID().toString, o))
     }
   }
 }
