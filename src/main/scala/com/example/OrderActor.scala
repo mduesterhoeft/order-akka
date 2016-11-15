@@ -83,7 +83,21 @@ object OrderActor {
     }
     implicit val priceFormat = jsonFormat2(Price)
     implicit val productFormat = jsonFormat3(Product)
-    implicit val orderFormat = jsonFormat4(Order)
+    implicit val orderFormat = orderStatusDefaultJsonFormat(jsonFormat4(Order))
+
+    private def orderStatusDefaultJsonFormat[T](format: RootJsonFormat[T]): RootJsonFormat[T] = new RootJsonFormat[T] {
+      override def write(obj: T): JsValue = {
+        format.write(obj).asJsObject
+      }
+
+      override def read(json: JsValue): T = {
+        val order = json.asJsObject
+        order.fields.contains("orderStatus") match {
+          case true => format.read(order)
+          case false => format.read(order.copy(fields = order.fields.updated("orderStatus", OrderStatusFormat.write(Open))))
+        }
+      }
+    }
   }
 
   trait OrderFlow  {
