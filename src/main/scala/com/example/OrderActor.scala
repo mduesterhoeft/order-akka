@@ -92,10 +92,10 @@ object OrderActor {
 
       override def read(json: JsValue): T = {
         val order = json.asJsObject
-        order.fields.contains("orderStatus") match {
-          case true => format.read(order)
-          case false => format.read(order.copy(fields = order.fields.updated("orderStatus", OrderStatusFormat.write(Open))))
-        }
+        format.read(order.fields.contains("orderStatus") match {
+          case true => order
+          case false => order.copy(fields = order.fields.updated("orderStatus", OrderStatusFormat.write(Open)))
+        })
       }
     }
   }
