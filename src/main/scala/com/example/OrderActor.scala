@@ -14,6 +14,8 @@ import com.example.OrderActor.{Order, Product}
 import io.scalac.amqp.{Delivery, Message}
 import spray.json.{DefaultJsonProtocol, JsString, JsValue, JsonParser, RootJsonFormat}
 
+import scala.Product
+
 class OrderActor extends PersistentActor with ActorLogging {
   import OrderActor._
 
@@ -51,7 +53,7 @@ object OrderActor {
   }
   trait OrderEvent {}
 
-  trait OrderStatus {}
+  sealed trait OrderStatus
   case object Open extends OrderStatus
   case object Complete extends OrderStatus
   case object Cancelled extends OrderStatus
@@ -69,16 +71,18 @@ object OrderActor {
 
   object OrderProtocols extends SprayJsonSupport with DefaultJsonProtocol {
     implicit object OrderStatusFormat extends RootJsonFormat[OrderStatus] {
-      def write(c: OrderStatus) = c match {
-        case Open => JsString("Open")
-        case Complete => JsString("Complete")
-        case Cancelled => JsString("Cancelled")
-      }
+      //see https://github.com/spray/spray-json/issues/186
+      private val mapping = Seq(Open, Complete, Cancelled).map(obj ⇒ key(obj) -> obj).toMap
 
-      def read(value: JsValue) = value.convertTo[String] match {
-        case "Open" => Open
-        case "Complete" => Complete
-        case "Cancelled" => Cancelled
+      def write(c: OrderStatus) = JsString(key(c))
+
+      def read(value: JsValue): OrderStatus = (value match {
+        case JsString(value) => mapping.get(value)
+        case _ => None
+      }).getOrElse(throw new MatchError(s"not a valid OrderStatus $value"))
+
+      def key(obj: OrderStatus): String = {
+        obj.toString.toLowerCase
       }
     }
     implicit val priceFormat = jsonFormat2(Price)
