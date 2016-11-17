@@ -71,7 +71,7 @@ class OrderProcessingSpec extends TestKit(ActorSystem("CartActorSpec", ConfigFac
 
     val result = Await.result(future, 1 seconds)
 
-    result should have size(1)
+    result should have size 1
     result.head.order should equal(Order("1", List(Product("2", "some", Price("EUR", BigDecimal(13.50)))), Price("EUR", BigDecimal(13.50)), Complete))
     result.head.id should not be null
   }

@@ -15,6 +15,7 @@ import io.scalac.amqp.{Delivery, Message}
 import spray.json.{DefaultJsonProtocol, JsString, JsValue, JsonParser, RootJsonFormat}
 
 import scala.Product
+import scala.util.{Failure, Success, Try}
 
 class OrderActor extends PersistentActor with ActorLogging {
   import OrderActor._
@@ -53,10 +54,32 @@ object OrderActor {
   }
   trait OrderEvent {}
 
-  sealed trait OrderStatus
-  case object Open extends OrderStatus
-  case object Complete extends OrderStatus
-  case object Cancelled extends OrderStatus
+  sealed trait OrderStatus {
+    val name: String
+  }
+  case object Open extends OrderStatus {
+    val name = "open"
+  }
+  case object Complete extends OrderStatus {
+    val name = "complete"
+  }
+  case object Cancelled extends OrderStatus {
+    val name = "cancelled"
+  }
+
+  object OrderStatus {
+    def apply(str: String): Try[OrderStatus] = str match {
+      case Open.name => Success(Open)
+      case Complete.name => Success(Complete)
+      case Cancelled.name => Success(Cancelled)
+      case _ => Failure(new MatchError(s"Unknown order status '$str'"))
+    }
+
+    def unapply(str: String): Option[OrderStatus] = apply(str) match {
+      case Success(status) => Some(status)
+      case _ => None
+    }
+  }
 
   case class Price(currency: String, amount: BigDecimal)
   case class Product(id: String, name: String, price: Price)
