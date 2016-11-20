@@ -1,14 +1,15 @@
 package com.example
 
 import akka.actor.{ActorSystem, Props}
+import akka.http.scaladsl.Http
 import akka.persistence.Persistence
 import akka.persistence.journal.leveldb.{SharedLeveldbJournal, SharedLeveldbStore}
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{Sink, Source}
-import com.example.OrderActor.{CreateOrder, OrderFlow}
+import com.example.OrderActor._
 import io.scalac.amqp.Connection
 
-object  ApplicationMain extends App with OrderFlow {
+object  ApplicationMain extends App with OrderFlow with OrderApi {
   implicit val system = ActorSystem("MyActorSystem")
   implicit val mat = ActorMaterializer()
 
@@ -26,5 +27,12 @@ object  ApplicationMain extends App with OrderFlow {
     .via(deliveryToCreateOrderFlow())
     .to(Sink.actorRef[CreateOrder](orderActor, "done"))
 
-  system.awaitTermination()
+  Http().bindAndHandle(orderRoutes, "localhost", 8070)
+
+  orderActor ! CreateOrder("1", Order("1",
+    List(
+      Product("99", "some", Price("EUR", BigDecimal(10)))
+    ),
+    Price("EUR", BigDecimal(10))
+  ))
 }

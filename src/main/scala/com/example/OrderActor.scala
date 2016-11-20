@@ -3,18 +3,13 @@ package com.example
 import java.util.UUID
 
 import akka.NotUsed
-import akka.actor.Actor.Receive
-import akka.actor.{Actor, ActorLogging, ActorRef, Props}
-import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
-import akka.http.scaladsl.model.HttpCharsets
+import akka.actor.{ActorLogging, Props}
 import akka.persistence.{PersistentActor, SnapshotOffer}
-import akka.stream.scaladsl.{Flow, GraphDSL, Sink}
+import akka.stream.scaladsl.Flow
 import akka.util.ByteString
-import com.example.OrderActor.{Order, Product}
-import io.scalac.amqp.{Delivery, Message}
-import spray.json.{DefaultJsonProtocol, JsString, JsValue, JsonParser, RootJsonFormat}
+import io.scalac.amqp.Delivery
+import spray.json.JsonParser
 
-import scala.Product
 import scala.util.{Failure, Success, Try}
 
 class OrderActor extends PersistentActor with ActorLogging {
@@ -92,8 +87,7 @@ object OrderActor {
   case class OrderCreated(order: Order) extends OrderEvent
   case class OrderStatusSet(orderStatus: OrderStatus, comment: String) extends OrderEvent
 
-  trait OrderFlow  {
-    import OrderProtocols._
+  trait OrderFlow extends OrderProtocols {
 
     def deliveryToCreateOrderFlow(): Flow[Delivery, CreateOrder, NotUsed] = {
       Flow[Delivery]

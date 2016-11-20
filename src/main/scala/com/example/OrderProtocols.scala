@@ -4,7 +4,7 @@ import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import com.example.OrderActor._
 import spray.json.{DefaultJsonProtocol, JsNull, JsString, JsValue, JsonFormat, RootJsonFormat}
 
-object OrderProtocols extends SprayJsonSupport with DefaultJsonProtocol {
+trait OrderProtocols extends SprayJsonSupport with DefaultJsonProtocol {
 
   implicit object OrderStatusFormat extends RootJsonFormat[OrderStatus] {
     def write(status: OrderStatus) = JsString(status.name)

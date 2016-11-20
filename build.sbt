@@ -17,5 +17,6 @@ libraryDependencies ++= Seq(
   "io.scalac"                 %% "reactive-rabbit"                    % "1.1.2",
 
   "com.typesafe.akka"         %% "akka-testkit"                       % akkaVersion   % "test",
+  "com.typesafe.akka"         %% "akka-http-testkit"                       % akkaVersion   % "test",
   "org.scalatest"              % "scalatest_2.11"                     % "3.0.0"       % "test"
 )
