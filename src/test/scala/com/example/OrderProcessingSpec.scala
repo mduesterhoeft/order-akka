@@ -2,19 +2,22 @@ package com.example
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
+import akka.stream.alpakka.amqp.IncomingMessage
 import akka.stream.scaladsl.{Sink, Source}
 import akka.testkit.TestKit
 import akka.util.ByteString
 import com.example.OrderActor._
 import com.google.common.net.MediaType.JSON_UTF_8
+import com.rabbitmq.client.AMQP
+import com.rabbitmq.client.AMQP.BasicProperties
 import com.typesafe.config.ConfigFactory
-import io.scalac.amqp.{Delivery, DeliveryTag, Message}
 import org.scalatest.{FlatSpecLike, Matchers}
 
 import scala.collection.immutable._
 import scala.concurrent.{Await, Future}
 import scala.concurrent.duration._
 import scala.language.postfixOps
+
 class OrderProcessingSpec extends TestKit(ActorSystem("CartActorSpec", ConfigFactory.load().getConfig("localTest")))
   with FlatSpecLike with Matchers with OrderActor.OrderFlow {
 
@@ -104,7 +107,7 @@ class OrderProcessingSpec extends TestKit(ActorSystem("CartActorSpec", ConfigFac
   }
 
   private def whenOrderProcessed(json: String) = {
-    val future = Source(Seq(Delivery(Message(body = ByteString(json), contentType = Some(JSON_UTF_8)), DeliveryTag(1), "test", "#", true)))
+    val future = Source(Seq(IncomingMessage(ByteString(json), null, new BasicProperties())))
       .via(deliveryToCreateOrderFlow())
       .runWith(Sink.seq)
     future

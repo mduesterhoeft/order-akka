@@ -3,7 +3,7 @@ package com.example
 import akka.actor.ActorRef
 import akka.http.scaladsl.model.ContentTypes.`application/json`
 import akka.http.scaladsl.model._
-import akka.http.scaladsl.model.StatusCodes.{Accepted, NotFound, OK}
+import akka.http.scaladsl.model.StatusCodes.{NoContent, NotFound, OK}
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import akka.testkit.{TestActor, TestKit, TestProbe}
 import akka.util.ByteString
@@ -14,7 +14,7 @@ import spray.json._
 
 
 
-class OrderRouteSpec extends FlatSpec with Matchers with ScalatestRouteTest with BeforeAndAfterAll with OrderApi {
+class OrderApiSpec extends FlatSpec with Matchers with ScalatestRouteTest with BeforeAndAfterAll with OrderApi {
   val testProbe = TestProbe()
   override val orderActor: ActorRef = testProbe.ref
 
@@ -49,7 +49,7 @@ class OrderRouteSpec extends FlatSpec with Matchers with ScalatestRouteTest with
 
     Put("/orders/1/order-status", HttpEntity(`application/json`, ByteString(request.toJson.toString()))) ~> orderRoutes ~> check {
       handled shouldBe true
-      status shouldBe Accepted
+      status shouldBe NoContent
       testProbe.expectMsg(SetOrderStatus("1", request.status, request.comment))
     }
   }

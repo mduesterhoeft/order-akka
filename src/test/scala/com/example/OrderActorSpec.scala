@@ -8,7 +8,7 @@ import com.example.OrderActor._
 import com.typesafe.config.ConfigFactory
 import org.scalatest.{BeforeAndAfterAll, FlatSpecLike, Matchers}
 
-class CartActorSpec extends TestKit(ActorSystem("CartActorSpec", ConfigFactory.load().getConfig("localTest")))
+class OrderActorSpec extends TestKit(ActorSystem("CartActorSpec", ConfigFactory.load().getConfig("localTest")))
   with FlatSpecLike with ImplicitSender with Matchers with BeforeAndAfterAll {
 
   "OrderActor" should "create order" in {

@@ -4,10 +4,10 @@ import java.util.UUID
 
 import akka.NotUsed
 import akka.actor.{ActorLogging, Props}
+import akka.cluster.sharding.ShardRegion
 import akka.persistence.{PersistentActor, SnapshotOffer}
+import akka.stream.alpakka.amqp.IncomingMessage
 import akka.stream.scaladsl.Flow
-import akka.util.ByteString
-import io.scalac.amqp.Delivery
 import spray.json.JsonParser
 
 import scala.util.{Failure, Success, Try}
@@ -43,7 +43,18 @@ class OrderActor extends PersistentActor with ActorLogging {
 object OrderActor {
 
   val name = "order-actor"
+  def shardName = "order"
+  val numberOfShards = 100
   val props = Props[OrderActor]
+
+  val extractEntityId: ShardRegion.ExtractEntityId = {
+    case cmd: OrderCommand => (cmd.id, cmd)
+  }
+
+  val extractShardId: ShardRegion.ExtractShardId = {
+    case cmd: OrderCommand => (math.abs(cmd.id.hashCode()) % numberOfShards).toString
+  }
+
   trait OrderCommand {
     def id: String
   }
@@ -89,10 +100,11 @@ object OrderActor {
 
   trait OrderFlow extends OrderProtocols {
 
-    def deliveryToCreateOrderFlow(): Flow[Delivery, CreateOrder, NotUsed] = {
-      Flow[Delivery]
-        .map(delivery => delivery.message)
-        .map(message => JsonParser(ByteString(message.body.toArray).decodeString("UTF-8")).convertTo[Order])
+    def deliveryToCreateOrderFlow(): Flow[IncomingMessage, CreateOrder, NotUsed] = {
+      Flow[IncomingMessage]
+        .map(incomingMessage => incomingMessage.bytes)
+        .map(message => JsonParser(message.utf8String).convertTo[Order])
+          .log("order")
         .map(o => CreateOrder(UUID.randomUUID().toString, o))
     }
   }
