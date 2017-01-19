@@ -1,7 +1,5 @@
 package com.example
 
-import java.util.UUID
-
 import akka.NotUsed
 import akka.actor.{ActorLogging, Props}
 import akka.cluster.sharding.ShardRegion
@@ -93,7 +91,7 @@ object OrderActor {
 
   case class CreateOrder(id: String, order: Order) extends OrderCommand
   case class SetOrderStatus(id: String, orderStatus: OrderStatus, comment: String) extends OrderCommand
-  case class GetOrder(id: String)
+  case class GetOrder(id: String) extends OrderCommand
 
   case class OrderCreated(order: Order) extends OrderEvent
   case class OrderStatusSet(orderStatus: OrderStatus, comment: String) extends OrderEvent
@@ -105,7 +103,7 @@ object OrderActor {
         .map(incomingMessage => incomingMessage.bytes)
         .map(message => JsonParser(message.utf8String).convertTo[Order])
           .log("order")
-        .map(o => CreateOrder(UUID.randomUUID().toString, o))
+        .map(o => CreateOrder(o.id, o))
     }
   }
 }

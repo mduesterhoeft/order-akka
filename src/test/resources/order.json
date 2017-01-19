@@ -1,0 +1,17 @@
+{
+  "id" : "1",
+  "lineItems": [
+    {
+      "id": "1234",
+      "name": "awesome jeans",
+      "price": {
+        "currency": "EUR",
+        "amount": 10.99
+      }
+    }
+  ],
+  "total": {
+    "currency": "EUR",
+    "amount": 10.99
+  }
+}
