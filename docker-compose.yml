@@ -1,0 +1,10 @@
+rabbitmq:
+  image: rabbitmq:3-management
+  ports:
+    - "5672:5672"
+    - "15672:15672"
+
+cassandra:
+  image: cassandra:3
+  ports:
+    - "2551:2551"
